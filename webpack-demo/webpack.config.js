@@ -4,11 +4,11 @@ const {CleanWebpackPlugin} = require('clean-webpack-plugin');
 const path = require('path');
 
 module.exports={
-  mode: "production",
+  mode: "development",
   entry: './src/main.js',
   output:{
     filename:'[name].[chunkhash:8].js',    //输入的文件名是什么，生成的文件名也是什么
-    path:path.resolve(__dirname,'./out') //指定生成的文件目录
+    path:path.resolve(__dirname,'./dist') //指定生成的文件目录
   },
   module: {
     rules: [
@@ -34,17 +34,30 @@ module.exports={
       {test: /\.less$/, use: [ "style-loader", "css-loader", "less-loader"]},
       { 
         test: /\.(jpg|png)$/,
-        loader: "url-loader",
-        include: [path.resolve(__dirname, 'src/images')],
-        options: {
-          limit: 1000,
-          name: "images/[name].[hash:7].[ext]"
-        }
+        use: [
+          {
+            loader: 'url-loader',
+            options: {
+                //当加载的图片小于limit时，会将图片编译成base64字符串的形式,
+                //当图片大于这个limit，会用file-loader进行加载
+                limit: 40* 1024,
+                //在webpack4.x必须显式的指定fallback备用方法，这里指定为file-loader
+                fallback: require.resolve('file-loader'),
+                encoding: "base64",
+                //这个表示在打包生成的文件的名字，如果不配置这个，会根据hash生成一个名字，这个配置就是自定义命名规则
+                //这个表示会在输出文件夹dist下创建一个img文件夹，所有的文件会以 “原名字+hash值8位+文件扩展名”生成最终的文件来供使用
+                name: "images/[name].[hash:8].[ext]",
+                esModule:false
+            },
+          }
+        ],
+        include: [path.resolve(__dirname, 'src')],
       },
       {
         test: /\.vue$/,
         use: "vue-loader"
-      }
+      },
+      {test: /\.html$/, loader: "html-loader"}
     ]
   },
   devServer: {
